@@ -15,9 +15,6 @@
 ###########################################################################*/
 
 
-//#include <Blynk.h>
-//#include "NewPing.h"
-
 #include <Bounce2.h>
 #include <TaskSchedulerDeclarations.h>
 #include <TaskScheduler.h>
@@ -28,13 +25,13 @@
 
 
 
-Wheel FrontLeftWheel(46, 47, 5);
-Wheel FrontRightWheel(48, 49, 4);
-Wheel RearLeftWheel(50, 51, 7);
-Wheel RearRightWheel(52, 53, 6);
+Wheel* WheelFrontLeft = new Wheel(46, 47, 5);
+Wheel* WheelFrontRight = new Wheel(48, 49, 4);
+Wheel* WheelRearLeft = new Wheel(50, 51, 7);
+Wheel* WheelRearRight = new Wheel(52, 53, 6);
 
-Drive4Wheel myRobot(FrontLeftWheel, FrontRightWheel,
-	RearLeftWheel, RearRightWheel);
+Drive4Wheel myRobot(WheelFrontLeft, WheelFrontRight,
+	WheelRearLeft, WheelRearRight);
 
 //const byte frontLeftEncoder = 3;
 //const byte frontRightEncoder = 2;
@@ -47,10 +44,10 @@ const byte buttonPinLeft = 24;
 const byte buttonPinRight = 25;
 
 
-Bounce bounceForward(buttonPinForward, 10);
-Bounce bounceBackward(buttonPinBackward, 10);
-Bounce bounceLeft(buttonPinLeft, 10);
-Bounce bounceRight(buttonPinRight, 10);
+Bounce BounceForward(buttonPinForward, 10);
+Bounce BounceBackward(buttonPinBackward, 10);
+Bounce BounceLeft(buttonPinLeft, 10);
+Bounce BounceRight(buttonPinRight, 10);
 
 int drivingCondition = 0;
 int testButton = 0;
@@ -63,8 +60,8 @@ Task updateButton(40, TASK_FOREVER, &callbackButtonState, &myRobotSchedule);
 Task updateDriveState(50, TASK_FOREVER, &callbackDrive, &myRobotSchedule);
 
 void callbackButtonState() {
-	if (bounceForward.update()) {
-		if (bounceForward.read() == HIGH) {
+	if (BounceForward.update()) {
+		if (BounceForward.read() == HIGH) {
 			if (drivingCondition != 0) {
 				drivingCondition = 0;
 				Serial.println("Stopping..");
@@ -82,14 +79,14 @@ void callbackButtonState() {
 		}
 	}
 
-	else if (bounceBackward.update()) {
-		if (bounceBackward.read() == HIGH) drivingCondition = 2;
+	else if (BounceBackward.update()) {
+		if (BounceBackward.read() == HIGH) drivingCondition = 2;
 	}
-	else if (bounceLeft.update()) {
-		if (bounceLeft.read() == HIGH) drivingCondition = 3;
+	else if (BounceLeft.update()) {
+		if (BounceLeft.read() == HIGH) drivingCondition = 3;
 	}
-	else if (bounceRight.update()) {
-		if (bounceRight.read() == HIGH) drivingCondition = 4;
+	else if (BounceRight.update()) {
+		if (BounceRight.read() == HIGH) drivingCondition = 4;
 	}
 	else;
 
@@ -136,7 +133,7 @@ void callbackDrive() {
 
 void callbackPrintState() {
 	Serial.print("The robot is ");
-	if (myRobotMoving) Serial.println("moving.");
+	if (myRobot.robotDriveState() != ROBOT_NOT_MOVING) Serial.println("moving.");
 	else Serial.println("not moving.");
 
 	updateDriveState.setCallback(&callbackDrive);

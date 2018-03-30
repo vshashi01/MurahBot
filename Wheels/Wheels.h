@@ -17,10 +17,12 @@
 #define MAX_PROGRAMMABLE_WHEEL_SPEED 225
 #define TURN_WHEEL_FORWARD 1
 #define TURN_WHEEL_BACKWARD -1
-#define NO_WHEEL_TURN 0
-#define ROBOT_TURN_LEFT 1
-#define ROBOT_TURN_RIGHT -1
-#define ROBOT_NOT_TURNING 0
+#define NO_WHEEL_TURN 0  
+#define ROBOT_TURN_LEFT 180
+#define ROBOT_TURN_RIGHT -180 
+#define ROBOT_NOT_MOVING 0
+#define ROBOT_MOVING_FORWARD 90
+#define ROBOT_MOVING_BACKWARD -90
 
 
 
@@ -45,17 +47,17 @@ public:
 	DriveWheel();
 protected:
 	
-	void turnForward(Wheel& wheel, int speed);
-	void turnBackward(Wheel& wheel, int speed);
-	void stopTurning(Wheel& wheel);
+	void turnForward(Wheel* wheel, int speed);
+	void turnBackward(Wheel* wheel, int speed);
+	void stopTurning(Wheel* wheel);
 
 };
 
 
 class Drive4Wheel: public DriveWheel{
 public:
-	Drive4Wheel(Wheel& LeftFrontWheel, Wheel& RightFrontWheel,
-		Wheel& LeftRearWheel, Wheel& RightRearWheel);
+	Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
+		Wheel* LeftRearWheel, Wheel* RightRearWheel);
 	void goForward(int speed = MIN_PROGRAMMABLE_WHEEL_SPEED);
 	void goBackward(int speed = MIN_PROGRAMMABLE_WHEEL_SPEED);
 	void turnLeft(int leftWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED,
@@ -63,16 +65,16 @@ public:
 	void turnRight(int leftWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED, 
 		int rightWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED);
 	void stop();
-	int robotTurnState();
+	int robotDriveState();
 	//void swayLeft(int swaySpeed);    //implement if needed in the future 
 	//void swayRight(int swaySpeed);
 
 
 private:
-	Wheel _LeftFrontWheel;
-	Wheel _RightFrontWheel;
-	Wheel _LeftRearWheel;
-	Wheel _RightRearWheel;
+	Wheel* _LeftFrontWheel;
+	Wheel* _RightFrontWheel;
+	Wheel* _LeftRearWheel;
+	Wheel* _RightRearWheel;
 
 };
 

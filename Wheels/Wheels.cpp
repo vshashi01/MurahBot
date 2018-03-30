@@ -24,8 +24,8 @@ void Wheel::initWheel() {
 	pinMode(pinSpeed, OUTPUT);
 }
 
-Drive4Wheel::Drive4Wheel(Wheel& LeftFrontWheel, Wheel& RightFrontWheel,
-	Wheel& LeftRearWheel, Wheel& RightRearWheel)
+Drive4Wheel::Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
+	Wheel* LeftRearWheel, Wheel* RightRearWheel)
 	:_LeftFrontWheel(LeftFrontWheel), _RightFrontWheel(RightFrontWheel),
 	_LeftRearWheel(LeftRearWheel), _RightRearWheel(RightRearWheel) {}
 
@@ -64,48 +64,61 @@ void Drive4Wheel::stop() {
 	stopTurning(_LeftRearWheel);
 }
 
-int Drive4Wheel::robotTurnState() {
-	if (_LeftFrontWheel.turnState == TURN_WHEEL_FORWARD &&
-		_LeftRearWheel.turnState == TURN_WHEEL_FORWARD &&
-		_RightFrontWheel.turnState == TURN_WHEEL_BACKWARD &&
-		_RightRearWheel.turnState == TURN_WHEEL_BACKWARD)
+int Drive4Wheel::robotDriveState() {
+	if (_LeftFrontWheel->turnState == TURN_WHEEL_FORWARD &&
+		_LeftRearWheel->turnState == TURN_WHEEL_FORWARD &&
+		_RightFrontWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_RightRearWheel->turnState == TURN_WHEEL_BACKWARD)
 		return ROBOT_TURN_RIGHT;
 
-	else if (_LeftFrontWheel.turnState == TURN_WHEEL_BACKWARD &&
-		_LeftRearWheel.turnState == TURN_WHEEL_BACKWARD &&
-		_RightFrontWheel.turnState == TURN_WHEEL_FORWARD &&
-		_RightRearWheel.turnState == TURN_WHEEL_FORWARD)
+	else if (_LeftFrontWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_LeftRearWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_RightFrontWheel->turnState == TURN_WHEEL_FORWARD &&
+		_RightRearWheel->turnState == TURN_WHEEL_FORWARD)
 		return ROBOT_TURN_LEFT;
 
-	else return ROBOT_NOT_TURNING;
+	else if (_LeftFrontWheel->turnState == TURN_WHEEL_FORWARD &&
+		_LeftRearWheel->turnState == TURN_WHEEL_FORWARD &&
+		_RightFrontWheel->turnState == TURN_WHEEL_FORWARD &&
+		_RightRearWheel->turnState == TURN_WHEEL_FORWARD)
+		return ROBOT_MOVING_FORWARD;
+
+	else if (_LeftFrontWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_LeftRearWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_RightFrontWheel->turnState == TURN_WHEEL_BACKWARD &&
+		_RightRearWheel->turnState == TURN_WHEEL_BACKWARD)
+		return ROBOT_MOVING_BACKWARD;
+
+
+	else return ROBOT_NOT_MOVING;
 }
 
 
 DriveWheel::DriveWheel() {}
 
-void DriveWheel::turnForward(Wheel& wheel, int speed) {
+void DriveWheel::turnForward(Wheel* wheel, int speed) {
 	if (speed < MIN_WHEEL_SPEED) speed = MIN_WHEEL_SPEED;
 	else if (speed > MAX_WHEEL_SPEED) speed = MAX_WHEEL_SPEED;
 	else;
-	digitalWrite(wheel.pinForward, HIGH);
-	digitalWrite(wheel.pinBackward, LOW);
-	analogWrite(wheel.pinSpeed, speed);
-	wheel.turnState = TURN_WHEEL_FORWARD;
+	digitalWrite(wheel->pinForward, HIGH);
+	digitalWrite(wheel->pinBackward, LOW);
+	analogWrite(wheel->pinSpeed, speed);
+	wheel->turnState = TURN_WHEEL_FORWARD;
 }
 
-void DriveWheel::turnBackward(Wheel& wheel, int speed) {
+void DriveWheel::turnBackward(Wheel* wheel, int speed) {
 	if (speed < MIN_WHEEL_SPEED) speed = MIN_WHEEL_SPEED;
 	else if (speed > MAX_WHEEL_SPEED) speed = MAX_WHEEL_SPEED;
 	else;
-	digitalWrite(wheel.pinForward, LOW);
-	digitalWrite(wheel.pinBackward, HIGH);
-	analogWrite(wheel.pinSpeed, speed);
-	wheel.turnState = TURN_WHEEL_BACKWARD;
+	digitalWrite(wheel->pinForward, LOW);
+	digitalWrite(wheel->pinBackward, HIGH);
+	analogWrite(wheel->pinSpeed, speed);
+	wheel->turnState= TURN_WHEEL_BACKWARD;
 }
 
-void DriveWheel::stopTurning(Wheel& wheel) {
-	analogWrite(wheel.pinSpeed, 0);
-	digitalWrite(wheel.pinForward, LOW);
-	digitalWrite(wheel.pinBackward, LOW);
-	wheel.turnState = NO_WHEEL_TURN;
+void DriveWheel::stopTurning(Wheel* wheel) {
+	analogWrite(wheel->pinSpeed, 0);
+	digitalWrite(wheel->pinForward, LOW);
+	digitalWrite(wheel->pinBackward, LOW);
+	wheel->turnState = NO_WHEEL_TURN;
 }
