@@ -1,9 +1,9 @@
 /*##########################################################################
  Project Name: MurahBot												   
- Current Version: 0.2.2												   
+ Current Version: 0.3.3												   
  Description: A 4WD mobile robot made of 4 motors, 2 Dual H Bridge Motor  
-			   Drivers, with Arduino Mega2560 connected with 4 Push        
-			   Buttons.	    											   
+			   Drivers, with Arduino Mega2560 controlled with Blynk App and BLE connection with Joystick Input.
+			   Push button as System button. 
  Developer: Shashi														   
  Email: vshashi01gmail.com												   
  GitHub:																   
