@@ -1,6 +1,8 @@
-/*##########################################################################
+/*###############################################################################################################
  Project Name: MurahBot												   
- Current Version: 0.3.3												   
+
+ Current Version: 0.3.4												   
+
  Description: A 4WD mobile robot made of 4 motors, 2 Dual H Bridge Motor  
 			   Drivers, with Arduino Mega2560 controlled with Blynk App and BLE connection with Joystick Input.
 			   Push button as System button. 
@@ -11,7 +13,11 @@
 	1. Wheels library (self-made)										   
 	2. Task Schedular Library											   
 																		   
-###########################################################################*/
+#################################################################################################################*/
+
+#define BLYNK_USE_DIRECT_CONNECT 
+
+#define MurahBotBT Serial1
 
 #define BLYNK_USE_DIRECT_CONNECT 
 
@@ -126,6 +132,7 @@ void callbackEnableDisableMurahBot() {
 		prevSystemState = currSystemState;
 		currSystemState = PASSIVE;
 		Serial.println("Shutting down drive systems...");
+		murahDrive.stop(); //force stop the robot
 		taskUpdateDriveState.disable();
 	}
 	
@@ -173,7 +180,8 @@ byte speedTurn; //turn speed
 BLYNK_WRITE(V1) {
 	joystickX = param[0].asInt();
 	joystickY = param[1].asInt();
-	//Serial.println("Joystick Moved");
+
+	//Blynk input for joystick values 
 }
 
 void mapJoystick() {
