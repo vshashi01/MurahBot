@@ -22,10 +22,6 @@
 
 #define MurahBotBT Serial1
 
-#define BLYNK_USE_DIRECT_CONNECT 
-
-#define MurahBotBT Serial1
-
 
 #include <Bounce2.h>
 #include <TaskSchedulerDeclarations.h>
@@ -234,7 +230,6 @@ void mapJoystick() {
 			dirStateY = ROBOT_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
 				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
-
 		}
 		else {
 			dirStateY = ROBOT_NOT_MOVING;
@@ -254,8 +249,6 @@ void mapJoystick() {
 			dirStateY = ROBOT_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
 				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
-
-
 		}
 		else {
 			dirStateY = ROBOT_NOT_MOVING;
