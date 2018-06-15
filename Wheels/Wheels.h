@@ -1,51 +1,54 @@
 // Wheels.h
 //#include <>
 
+
 #ifndef _WHEELS_h
 #define _WHEELS_h
 
 
 
 
-
-#define MIN_WHEEL_SPEED 120   //bound to change with more tests
-#define MAX_WHEEL_SPEED 255
-#define MIN_PROGRAMMABLE_WHEEL_SPEED 140 //to allow some buffer for PID controller
-#define MAX_PROGRAMMABLE_WHEEL_SPEED 225
-#define TURN_WHEEL_FORWARD 1
-#define TURN_WHEEL_BACKWARD -1
-#define NO_WHEEL_TURN 0  
-#define ROBOT_TURN_LEFT 180
-#define ROBOT_TURN_RIGHT -180 
-#define ROBOT_NOT_MOVING 0
-#define ROBOT_MOVING_FORWARD 90
-#define ROBOT_MOVING_BACKWARD -90
-
+enum RobotDriveState : uint8_t {
+	ROBOT_NOT_MOVING, ROBOT_FORWARD, ROBOT_BACKWARD, ROBOT_TURN_LEFT, ROBOT_TURN_RIGHT
+}; //all the robot drive states that are relevant to the robot
 
 
 // class to initialize the wheels of the robot. ONE instance for EACH wheel!!
 class Wheel {
 
 public:
-	Wheel(int pin1 = NULL, int pin2 = NULL, int enable = NULL); //default constructor
+	Wheel(int pin1 = NULL, int pin2 = NULL, int pinSetSpeed = NULL,
+		int minWheelAbsoluteSpeed = 120, int maxWheelAbsoluteSpeed = 255); //default constructor with default absolute speed values
+	
 	Wheel(const Wheel& AWheel); //copy constructor 
+	
 	void initWheel();  //initialization function, called in the constructor 
+	
 	int pinForward; // pin that turns wheel forward with a High (relative to the robot)
 	int pinBackward; //pin that turns wheel backward with a High (relative to the robot)
-	int pinSpeed; //pin that controls motor speed, analogWrite()
-	int turnState; // 1 for forward, 0 for No Turn , -1 for backward 
-
+	int pinSetSpeed; //pin that controls motor speed, analogWrite()
+	
+	enum WheelState : uint8_t {
+		WHEEL_NO_TURN, WHEEL_TURN_FORWARD, WHEEL_TURN_BACKWARD
+	};
+	
+	Wheel::WheelState turnState; // tracks the state/direction of turn for wheel
+	
+	int minWheelAbsoluteSpeed;  //lowest speed the wheel can turn 
+	int maxWheelAbsoluteSpeed;	//highest speed the wheel can turn 
+		
 };
 
-//base class for the basic Drive functons. This class need not be declared explicitly.
-
+//base class for the basic Drive functions. This class need not be instantiated explicitly.
 class DriveWheel {
 public:
 	DriveWheel();
 protected:
 	
 	void turnForward(Wheel* wheel, int speed);
+
 	void turnBackward(Wheel* wheel, int speed);
+
 	void stopTurning(Wheel* wheel);
 
 };
@@ -54,24 +57,40 @@ protected:
 class Drive4Wheel: public DriveWheel{
 public:
 	Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
-		Wheel* LeftRearWheel, Wheel* RightRearWheel);
-	void goForward(int speed = MIN_PROGRAMMABLE_WHEEL_SPEED);
-	void goBackward(int speed = MIN_PROGRAMMABLE_WHEEL_SPEED);
-	void turnLeft(int leftWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED,
-		int rightWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED);
-	void turnRight(int leftWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED, 
-		int rightWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED);
+		Wheel* LeftRearWheel, Wheel* RightRearWheel, int speedToleranceRange); //default constructor with 4 Wheel instatiation and speed tolerance 
+	//speed tolerance range ensure that the wheel speeds are clipped below that range from the absolute max and min  
+	static int maxDriveSpeed;
+	static int minDriveSpeed;
+	//approximately the actual robot wheel speeds allowed  
+	void initDrive4Wheel();  //initialize the drive speed for the drive4wheel object 
+	void goForward(int speed = minDriveSpeed);
+
+	void goBackward(int speed = minDriveSpeed);
+
+	void turnLeft(int leftWheelSpeed = minDriveSpeed,
+		int rightWheelSpeed = minDriveSpeed);
+
+	void turnRight(int leftWheelSpeed = minDriveSpeed,
+		int rightWheelSpeed = minDriveSpeed);
+
 	void stop();
-	int robotDriveState();
-	void swayLeft(int leftWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED,
-					int rightWheelSpeed = MAX_PROGRAMMABLE_WHEEL_SPEED, 
+
+
+	
+	void swayLeft(int leftWheelSpeed = minDriveSpeed,
+					int rightWheelSpeed = maxDriveSpeed, 
 						bool reverse = false); //only to be used with joystick controls 
-	void swayRight(int leftWheelSpeed = MAX_PROGRAMMABLE_WHEEL_SPEED,
-					int rightWheelSpeed = MIN_PROGRAMMABLE_WHEEL_SPEED,
-						bool reverse = false);
+
+	void swayRight(int leftWheelSpeed = maxDriveSpeed,
+					int rightWheelSpeed = minDriveSpeed,
+						bool reverse = false); //only to be used with joystick controls
+
+	RobotDriveState robotDriveState(); //return to robot drive state based on the wheel spin conditions
+
 
 
 private:
+	int _speedToleranceRange;
 	Wheel* _LeftFrontWheel;
 	Wheel* _RightFrontWheel;
 	Wheel* _LeftRearWheel;
