@@ -1,7 +1,8 @@
 /*###############################################################################################################
  Project Name: MurahBot												   
 
- Current Version: 0.3.4												   
+ Current Version: 0.3.5												   
+
 
  Description: A 4WD mobile robot made of 4 motors, 2 Dual H Bridge Motor  
 			   Drivers, with Arduino Mega2560 controlled with Blynk App and BLE connection with Joystick Input.
@@ -9,9 +10,11 @@
  Developer: Shashi														   
  Email: vshashi01gmail.com												   
  GitHub:																   
- External Libraries used:												   
+ External Libraries/App used:												   
 	1. Wheels library (self-made)										   
-	2. Task Schedular Library											   
+	2. Task Schedular Library
+	3. Blynk App and Blynk libraries for Arduino 
+	4. Bounce2 Libraries for Pushbuttons
 																		   
 #################################################################################################################*/
 
@@ -45,8 +48,12 @@ Wheel* WheelFrontRight = new Wheel(48, 49, 4);
 Wheel* WheelRearLeft = new Wheel(50, 51, 7);
 Wheel* WheelRearRight = new Wheel(52, 53, 6);
 
+
+
+int speedTolerance = 30;
 Drive4Wheel murahDrive(WheelFrontLeft, WheelFrontRight,
-	WheelRearLeft, WheelRearRight);
+	WheelRearLeft, WheelRearRight, speedTolerance);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Button Pin initialization and Bounce class instantiation 
@@ -132,11 +139,16 @@ void callbackEnableDisableMurahBot() {
 		prevSystemState = currSystemState;
 		currSystemState = PASSIVE;
 		Serial.println("Shutting down drive systems...");
+
+
 		murahDrive.stop(); //force stop the robot
+
+
 		taskUpdateDriveState.disable();
 	}
 	
 }
+
 
 bool onEnableOfEnableDisableMurahBot() {
 	taskEnableDisableMurahBot.setCallback(&callbackEnableDisableMurahBot);
@@ -155,6 +167,14 @@ void callbackBlynk() {
 	taskRunBlynk.setCallback(callbackBlynk);
 }
 
+
+bool onEnableOfEnableDisableMurahBot() {
+	taskEnableDisableMurahBot.setCallback(&callbackEnableDisableMurahBot);
+	taskEnableDisableMurahBot.forceNextIteration();
+	return true;
+}
+
+
 bool onEnableBlynk() {
 	Blynk.begin(auth, MurahBotBT);
 	currBlynkState = ACTIVE;
@@ -171,8 +191,8 @@ const byte Y_THRESHOLD_HIGH = 148;
 int joystickX = 127; // initialized to the center position 127
 int joystickY = 127; // initilized to the center position
 
-int dirStateX; // defined using Wheels Macros 
-int dirStateY; // to keep robot wheel action state in 2 directions  
+RobotDriveState dirStateX; // defined using Wheels Macros 
+RobotDriveState dirStateY; // to keep robot wheel action state in 2 directions  
 
 byte speedRun; //forward backward speed 
 byte speedTurn; //turn speed 
@@ -184,20 +204,23 @@ BLYNK_WRITE(V1) {
 	//Blynk input for joystick values 
 }
 
+
 void mapJoystick() {
 	if (joystickX < X_THRESHOLD_LOW) {
 		dirStateX = ROBOT_TURN_LEFT;
 		speedTurn = map(joystickX, X_THRESHOLD_LOW, 0,
-			MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+
+			murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = ROBOT_MOVING_BACKWARD;
+			dirStateY = ROBOT_BACKWARD;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_MOVING_FORWARD;
+			dirStateY = ROBOT_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+
 		}
 		else {
 			dirStateY = ROBOT_NOT_MOVING;
@@ -207,16 +230,18 @@ void mapJoystick() {
 	else if (joystickX > X_THRESHOLD_HIGH) {
 		dirStateX = ROBOT_TURN_RIGHT;
 		speedTurn = map(joystickX, X_THRESHOLD_HIGH, 255,
-			MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+
+			murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = ROBOT_MOVING_BACKWARD;
+			dirStateY = ROBOT_BACKWARD;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_MOVING_FORWARD;
+			dirStateY = ROBOT_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+
 		}
 		else {
 			dirStateY = ROBOT_NOT_MOVING;
@@ -227,18 +252,23 @@ void mapJoystick() {
 		dirStateX = ROBOT_NOT_MOVING;
 		speedTurn = 0;
 		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = ROBOT_MOVING_BACKWARD;
+
+			dirStateY = ROBOT_BACKWARD;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_MOVING_FORWARD;
+			dirStateY = ROBOT_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				MIN_PROGRAMMABLE_WHEEL_SPEED, MAX_PROGRAMMABLE_WHEEL_SPEED);
+				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+
+
 		}
 		else {
 			dirStateY = ROBOT_NOT_MOVING;
 			speedRun = 0;
+
+
 		}
 	}
 }
@@ -246,14 +276,18 @@ void mapJoystick() {
 void joystickDrive() {
 	mapJoystick();
 	if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_NOT_MOVING) murahDrive.stop();
-	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_MOVING_FORWARD) murahDrive.goForward(speedRun);
-	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_MOVING_BACKWARD) murahDrive.goBackward(speedRun);
+
+
+	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_FORWARD) murahDrive.goForward(speedRun);
+	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_BACKWARD) murahDrive.goBackward(speedRun);
 	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_NOT_MOVING) murahDrive.turnRight(speedTurn, speedTurn);
 	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_NOT_MOVING) murahDrive.turnLeft(speedTurn, speedTurn);
-	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_MOVING_FORWARD) murahDrive.swayLeft(speedTurn, speedRun, false);
-	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_MOVING_BACKWARD) murahDrive.swayLeft(speedTurn, speedRun, true);
-	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_MOVING_FORWARD) murahDrive.swayRight(speedTurn, speedRun, false);
-	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_MOVING_BACKWARD) murahDrive.swayRight(speedTurn, speedRun, true);
+	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_FORWARD) murahDrive.swayLeft(speedTurn, speedRun, false);
+	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_BACKWARD) murahDrive.swayLeft(speedTurn, speedRun, true);
+	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_FORWARD) murahDrive.swayRight(speedTurn, speedRun, false);
+	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_BACKWARD) murahDrive.swayRight(speedTurn, speedRun, true);
+
+
 	else murahDrive.stop();
 
 	//assess if needed, if NOT must remove in the future
