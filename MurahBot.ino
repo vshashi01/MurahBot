@@ -150,12 +150,6 @@ void callbackEnableDisableMurahBot() {
 }
 
 
-bool onEnableOfEnableDisableMurahBot() {
-	taskEnableDisableMurahBot.setCallback(&callbackEnableDisableMurahBot);
-	taskEnableDisableMurahBot.forceNextIteration();
-	return true;
-}
-
 void callbackJoystickDrive() {
 	joystickDrive();
 	taskUpdateDriveState.setCallback(&callbackJoystickDrive);
@@ -230,7 +224,6 @@ void mapJoystick() {
 	else if (joystickX > X_THRESHOLD_HIGH) {
 		dirStateX = ROBOT_TURN_RIGHT;
 		speedTurn = map(joystickX, X_THRESHOLD_HIGH, 255,
-
 			murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		if (joystickY < Y_THRESHOLD_LOW) {
 			dirStateY = ROBOT_BACKWARD;

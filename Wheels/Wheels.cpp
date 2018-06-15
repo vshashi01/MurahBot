@@ -175,57 +175,6 @@ RobotDriveState Drive4Wheel::robotDriveState() {
 	else return ROBOT_NOT_MOVING;
 }
 
-void Drive4Wheel::swayLeft(int leftWheelSpeed,
-	int rightWheelSpeed, bool reverse) {
-	int speedHigh, speedLow;
-	if (rightWheelSpeed > leftWheelSpeed) {
-		speedHigh = rightWheelSpeed;
-		speedLow = leftWheelSpeed;
-	}
-	else {
-		speedHigh = leftWheelSpeed;
-		speedLow = rightWheelSpeed;
-	}
-	if (reverse) {
-		turnBackward(_LeftFrontWheel, speedLow);
-		turnBackward(_LeftRearWheel, speedLow);
-		turnBackward(_RightFrontWheel, speedHigh);
-		turnBackward(_RightRearWheel, speedHigh);
-	}
-	else {
-		turnForward(_LeftFrontWheel, speedLow);
-		turnForward(_LeftRearWheel, speedLow);
-		turnForward(_RightFrontWheel, speedHigh);
-		turnForward(_RightRearWheel, speedHigh);
-	}
-}
-
-void Drive4Wheel::swayRight(int leftWheelSpeed,
-	int rightWheelSpeed, bool reverse) {
-	int speedHigh, speedLow;
-	if (rightWheelSpeed > leftWheelSpeed) {
-		speedHigh = rightWheelSpeed;
-		speedLow = leftWheelSpeed;
-	}
-	else {
-		speedHigh = leftWheelSpeed;
-		speedLow = rightWheelSpeed;
-	}
-	if (reverse) {
-		turnBackward(_RightFrontWheel, speedLow);
-		turnBackward(_RightRearWheel, speedLow);
-		turnBackward(_LeftFrontWheel, speedHigh);
-		turnBackward(_LeftRearWheel, speedHigh);
-	}
-	else {
-		turnForward(_RightFrontWheel, speedLow);
-		turnForward(_RightRearWheel, speedLow);
-		turnForward(_LeftFrontWheel, speedHigh);
-		turnForward(_LeftRearWheel, speedHigh);
-	}
-}
-
-
 //base class Drive: just to have generalized spin methods for wheels 
 DriveWheel::DriveWheel() {}
 

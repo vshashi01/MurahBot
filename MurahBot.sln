@@ -5,12 +5,9 @@ VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MurahBot", "MurahBot.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Wheels", "Wheels\Wheels.vcxitems", "{528A69AB-4296-481A-8547-629A30AE1404}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Wheels", "Wheels\Wheels.vcxitems", "{DE5A818D-7863-4181-B3EC-0A2C90172F67}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Wheels\Wheels.vcxitems*{528a69ab-4296-481a-8547-629a30ae1404}*SharedItemsImports = 9
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
 		Release|x86 = Release|x86
