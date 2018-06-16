@@ -181,11 +181,11 @@ const byte Y_THRESHOLD_HIGH = 148;
 int joystickX = 127; // initialized to the center position 127
 int joystickY = 127; // initilized to the center position
 
-RobotDriveState dirStateX; // defined using Wheels Macros 
-RobotDriveState dirStateY; // to keep robot wheel action state in 2 directions  
+Drive4Wheel::DriveState dirStateX; // defined using Wheels Macros 
+Drive4Wheel::DriveState dirStateY; // to keep robot wheel action state in 2 directions  
 
-byte speedRun; //forward backward speed 
-byte speedTurn; //turn speed 
+int speedRun; //forward backward speed 
+int speedTurn; //turn speed 
 
 BLYNK_WRITE(V1) {
 	joystickX = param[0].asInt();
@@ -197,61 +197,61 @@ BLYNK_WRITE(V1) {
 
 void mapJoystick() {
 	if (joystickX < X_THRESHOLD_LOW) {
-		dirStateX = ROBOT_TURN_LEFT;
+		dirStateX = Drive4Wheel::DRIVE_LEFT;
 		speedTurn = map(joystickX, X_THRESHOLD_LOW, 0,
+			murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 
-			murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
 		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = ROBOT_BACKWARD;
+			dirStateY = Drive4Wheel::DRIVE_BACKWARD_LEFT;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_FORWARD;
+			dirStateY = Drive4Wheel::DRIVE_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 
 		}
 		else {
-			dirStateY = ROBOT_NOT_MOVING;
+			dirStateY = Drive4Wheel::DRIVE_STOP;
 			speedRun = 0;
 		}
 	}
 	else if (joystickX > X_THRESHOLD_HIGH) {
-		dirStateX = ROBOT_TURN_RIGHT;
+		dirStateX = Drive4Wheel::DRIVE_RIGHT;
 		speedTurn = map(joystickX, X_THRESHOLD_HIGH, 255,
-			murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+			murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = ROBOT_BACKWARD;
+			dirStateY = Drive4Wheel::DRIVE_BACKWARD_RIGHT;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_FORWARD;
+			dirStateY = Drive4Wheel::DRIVE_RIGHT;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		}
 		else {
-			dirStateY = ROBOT_NOT_MOVING;
+			dirStateY = Drive4Wheel::DRIVE_STOP;
 			speedRun = 0;
 		}
 	}
 	else {
-		dirStateX = ROBOT_NOT_MOVING;
+		dirStateX = Drive4Wheel::DRIVE_STOP;
 		speedTurn = 0;
 		if (joystickY < Y_THRESHOLD_LOW) {
 
-			dirStateY = ROBOT_BACKWARD;
+			dirStateY = Drive4Wheel::DRIVE_BACKWARD;
 			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		}
 		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = ROBOT_FORWARD;
+			dirStateY = Drive4Wheel::DRIVE_FORWARD;
 			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.minDriveSpeed, murahDrive.maxDriveSpeed);
+				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
 		}
 		else {
-			dirStateY = ROBOT_NOT_MOVING;
+			dirStateY = Drive4Wheel::DRIVE_STOP;
 			speedRun = 0;
 
 
@@ -261,25 +261,24 @@ void mapJoystick() {
 
 void joystickDrive() {
 	mapJoystick();
-	if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_NOT_MOVING) murahDrive.stop();
+	if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_STOP) murahDrive.stop();
 
 
-	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_FORWARD) murahDrive.goForward(speedRun);
-	else if (dirStateX == ROBOT_NOT_MOVING && dirStateY == ROBOT_BACKWARD) murahDrive.goBackward(speedRun);
-	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_NOT_MOVING) murahDrive.turnRight(speedTurn, speedTurn);
-	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_NOT_MOVING) murahDrive.turnLeft(speedTurn, speedTurn);
-	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_FORWARD) murahDrive.swayLeft(speedTurn, speedRun, false);
-	else if (dirStateX == ROBOT_TURN_LEFT && dirStateY == ROBOT_BACKWARD) murahDrive.swayLeft(speedTurn, speedRun, true);
-	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_FORWARD) murahDrive.swayRight(speedTurn, speedRun, false);
-	else if (dirStateX == ROBOT_TURN_RIGHT && dirStateY == ROBOT_BACKWARD) murahDrive.swayRight(speedTurn, speedRun, true);
+	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goForward(speedRun);
+	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_BACKWARD) murahDrive.goBackward(speedRun);
+	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goRight(speedTurn, 1.0);
+	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goLeft(speedTurn, 1.0);
+	//else if (dirStateX == DRIVE_LEFT && dirStateY == DRIVE_FORWARD) murahDrive.goLeft(speedTurn, 0.8, false);
+	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_LEFT) murahDrive.goLeft(speedTurn, 0.8, true);
+	//else if (dirStateX == DRIVE_RIGHT && dirStateY == DRIVE_FORWARD) murahDrive.goRight(speedTurn, 0.8, false);
+	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_RIGHT) murahDrive.goRight(speedTurn, 0.8, true);
 
 
 	else murahDrive.stop();
 
 	//assess if needed, if NOT must remove in the future
 	Serial.print("The robot's drive state: ");
-	if(murahDrive.robotDriveState() != ROBOT_NOT_MOVING)
-	Serial.println("MOVING");
+	if(murahDrive.getCurrentDriveState() != Drive4Wheel::DRIVE_STOP)	Serial.println("MOVING");
 	else Serial.println("NOT MOVING");
 
 }
