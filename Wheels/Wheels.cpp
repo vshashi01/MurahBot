@@ -82,158 +82,123 @@ Drive4Wheel::Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
 }
 
 //initializing the speed variables with 0 
-int Drive4Wheel::minDriveSpeed = 0;
-int Drive4Wheel::maxDriveSpeed = 0;
+int Drive4Wheel::_minDriveSpeed = 0;
+int Drive4Wheel::_maxDriveSpeed = 0;
 
 //called during the instantiation pf the Drive4Wheel class 
 void Drive4Wheel::initDrive4Wheel() {
-	minDriveSpeed = max(_LeftFrontWheel->getWheelAbsoluteSpeed(MIN), max(_RightFrontWheel->getWheelAbsoluteSpeed(MIN),
+	setDriveSpeed();
+}
+
+//returns drive speed 
+int Drive4Wheel::getDriveSpeed(MinMaxRange rangeValue) {
+	if (rangeValue == MIN)
+		return _minDriveSpeed;
+	else if (rangeValue == MAX)
+		return _maxDriveSpeed;
+	else
+		return NULL;
+}
+
+//returns the tolerance value for speed ranges
+int Drive4Wheel::getSpeedToleranceRange() {
+	return _speedToleranceRange;
+}
+
+//sets the tolerance value for speed ranges
+void Drive4Wheel::setSpeedToleranceRange(int speedTolerance) {
+	_speedToleranceRange = speedTolerance;
+	setDriveSpeed();
+}
+
+//Drive4Wheel methods for driving 
+void Drive4Wheel::goForward(int wheelSpeed) {
+	_LeftFrontWheel->setSpinForward(wheelSpeed);
+	_LeftRearWheel->setSpinForward(wheelSpeed);
+	_RightFrontWheel->setSpinForward(wheelSpeed);
+	_RightRearWheel->setSpinForward(wheelSpeed);
+
+	_driveState = DRIVE_FORWARD;
+}
+
+void Drive4Wheel::goBackward(int wheelSpeed) {
+	_LeftFrontWheel->setSpinBackward(wheelSpeed);
+	_LeftRearWheel->setSpinBackward(wheelSpeed);
+	_RightFrontWheel->setSpinBackward(wheelSpeed);
+	_RightRearWheel->setSpinBackward(wheelSpeed);
+
+	_driveState = DRIVE_BACKWARD;
+}
+
+void Drive4Wheel::goLeft(int wheelSpeed, float speedRatio, bool reverse) {
+	if (reverse == true) {
+		_LeftFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_LeftRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_RightFrontWheel->setSpinBackward(wheelSpeed);
+		_RightRearWheel->setSpinBackward(wheelSpeed);
+
+		_driveState = DRIVE_BACKWARD_LEFT;
+	}
+	else {
+		_RightFrontWheel->setSpinForward(wheelSpeed);
+		_RightRearWheel->setSpinForward(wheelSpeed);
+		_LeftFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_LeftRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+
+		_driveState = DRIVE_LEFT;
+	}	
+}
+
+void Drive4Wheel::goRight(int wheelSpeed, float speedRatio, bool reverse) {
+	if (reverse == true) {
+		_LeftFrontWheel->setSpinBackward(wheelSpeed);
+		_LeftRearWheel->setSpinBackward(wheelSpeed);
+		_RightFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_RightRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+
+		_driveState = DRIVE_BACKWARD_RIGHT;
+	}
+	else {
+		_LeftFrontWheel->setSpinForward(wheelSpeed);
+		_LeftRearWheel->setSpinForward(wheelSpeed);
+		_RightFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_RightRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+
+		_driveState = DRIVE_RIGHT;
+	}	
+}
+
+void Drive4Wheel::stop() {
+	_LeftFrontWheel->setSpinStop();
+	_LeftRearWheel->setSpinStop();
+	_RightFrontWheel->setSpinStop();
+	_RightRearWheel->setSpinStop();
+
+	_driveState = DRIVE_STOP;
+}
+
+//Drive4Wheels method to identify the drive state of the drive systems
+Drive4Wheel::DriveState Drive4Wheel::getCurrentDriveState() {
+	return _driveState;	
+}
+
+//private function to update the drive speed values
+void Drive4Wheel::setDriveSpeed() {
+	_minDriveSpeed = max(_LeftFrontWheel->getWheelAbsoluteSpeed(MIN), max(_RightFrontWheel->getWheelAbsoluteSpeed(MIN),
 		max(_LeftRearWheel->getWheelAbsoluteSpeed(MIN), _RightRearWheel->getWheelAbsoluteSpeed(MIN))));
-	maxDriveSpeed = min(_LeftFrontWheel->getWheelAbsoluteSpeed(MAX), min(_RightFrontWheel->getWheelAbsoluteSpeed(MAX),
+	_maxDriveSpeed = min(_LeftFrontWheel->getWheelAbsoluteSpeed(MAX), min(_RightFrontWheel->getWheelAbsoluteSpeed(MAX),
 		min(_LeftRearWheel->getWheelAbsoluteSpeed(MAX), _RightRearWheel->getWheelAbsoluteSpeed(MAX))));
 	//the minimum and maximum drivespeeds are evaluated from each absolute speed values of the wheels. 
-	minDriveSpeed = minDriveSpeed + _speedToleranceRange;
-	maxDriveSpeed = maxDriveSpeed - _speedToleranceRange;
+	_minDriveSpeed = _minDriveSpeed + _speedToleranceRange;
+	_maxDriveSpeed = _maxDriveSpeed - _speedToleranceRange;
 	int biggerValue;
-	if (minDriveSpeed > maxDriveSpeed) {
-		biggerValue = minDriveSpeed;
-		minDriveSpeed = maxDriveSpeed;
-		maxDriveSpeed = biggerValue;		
+	if (_minDriveSpeed > _maxDriveSpeed) {
+		biggerValue = _minDriveSpeed;
+		_minDriveSpeed = _maxDriveSpeed;
+		_maxDriveSpeed = biggerValue;
 	}//checks if the tolerance value given causes the values to reach an incorrect range 
-	//if yes the higher and lower values are reset appropriately minDriveSpeed < maxDriveSpeed 
+	 //if yes the higher and lower values are reset appropriately minDriveSpeed < maxDriveSpeed 
 	else;
 
 }
 
-//Drive4Wheel methods for driving 
-void Drive4Wheel::goForward(int speed) {
-	turnForward(_LeftFrontWheel, speed);
-	turnForward(_LeftRearWheel, speed);
-	turnForward(_RightFrontWheel, speed);
-	turnForward(_RightRearWheel, speed);
-}
-
-void Drive4Wheel::goBackward(int speed) {
-	turnBackward(_LeftFrontWheel, speed);
-	turnBackward(_RightFrontWheel, speed);
-	turnBackward(_LeftRearWheel, speed);
-	turnBackward(_RightRearWheel, speed);
-}
-
-void Drive4Wheel::turnLeft(int leftWheelSpeed, int rightWheelSpeed) {
-	turnForward(_RightFrontWheel, rightWheelSpeed);
-	turnForward(_RightRearWheel, rightWheelSpeed);
-	turnBackward(_LeftFrontWheel, leftWheelSpeed);
-	turnBackward(_LeftRearWheel, leftWheelSpeed);
-}
-
-void Drive4Wheel::turnRight(int leftWheelSpeed, int rightWheelSpeed) {
-	turnForward(_LeftFrontWheel, leftWheelSpeed);
-	turnForward(_LeftRearWheel, leftWheelSpeed);
-	turnBackward(_RightFrontWheel,rightWheelSpeed);
-	turnBackward(_RightRearWheel, rightWheelSpeed);
-}
-
-void Drive4Wheel::stop() {
-	stopTurning(_LeftFrontWheel);
-	stopTurning(_RightFrontWheel);
-	stopTurning(_RightRearWheel);
-	stopTurning(_LeftRearWheel);
-}
-
-void Drive4Wheel::swayLeft(int leftWheelSpeed,
-	int rightWheelSpeed, bool reverse) {
-	int speedHigh, speedLow;
-	if (rightWheelSpeed > leftWheelSpeed) {
-		speedHigh = rightWheelSpeed;
-		speedLow = leftWheelSpeed;
-	}
-	else {
-		speedHigh = leftWheelSpeed;
-		speedLow = rightWheelSpeed;
-	}
-	if (reverse) {
-		turnBackward(_LeftFrontWheel, speedLow);
-		turnBackward(_LeftRearWheel, speedLow);
-		turnBackward(_RightFrontWheel, speedHigh);
-		turnBackward(_RightRearWheel, speedHigh);
-	}
-	else {
-		turnForward(_LeftFrontWheel, speedLow);
-		turnForward(_LeftRearWheel, speedLow);
-		turnForward(_RightFrontWheel, speedHigh);
-		turnForward(_RightRearWheel, speedHigh);
-	}
-}
-
-void Drive4Wheel::swayRight(int leftWheelSpeed,
-	int rightWheelSpeed, bool reverse) {
-	int speedHigh, speedLow;
-	if (rightWheelSpeed > leftWheelSpeed) {
-		speedHigh = rightWheelSpeed;
-		speedLow = leftWheelSpeed;
-	}
-	else {
-		speedHigh = leftWheelSpeed;
-		speedLow = rightWheelSpeed;
-	}
-	if (reverse) {
-		turnBackward(_RightFrontWheel, speedLow);
-		turnBackward(_RightRearWheel, speedLow);
-		turnBackward(_LeftFrontWheel, speedHigh);
-		turnBackward(_LeftRearWheel, speedHigh);
-	}
-	else {
-		turnForward(_RightFrontWheel, speedLow);
-		turnForward(_RightRearWheel, speedLow);
-		turnForward(_LeftFrontWheel, speedHigh);
-		turnForward(_LeftRearWheel, speedHigh);
-	}
-}
-
-//Drive4Wheels method to identify the drive state of the drive systems
-RobotDriveState Drive4Wheel::robotDriveState() {
-	if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD)
-		return ROBOT_TURN_RIGHT;
-
-	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD)
-		return ROBOT_TURN_LEFT;
-
-	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
-		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD)
-		return ROBOT_FORWARD;
-
-	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
-		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD)
-		return ROBOT_BACKWARD;
-
-
-	else return ROBOT_NOT_MOVING;
-}
-
-//base class Drive: just to have generalized spin methods for wheels 
-DriveWheel::DriveWheel() {}
-
-void DriveWheel::turnForward(Wheel* wheel, int speed) {
-	speed = constrain(speed, wheel->getWheelAbsoluteSpeed(MIN), wheel->getWheelAbsoluteSpeed(MAX));
-	wheel->setSpinForward(speed);
-}
-
-void DriveWheel::turnBackward(Wheel* wheel, int speed) {
-	speed = constrain(speed, wheel->getWheelAbsoluteSpeed(MIN), wheel->getWheelAbsoluteSpeed(MAX));
-	wheel->setSpinBackward(speed);
-}
-
-void DriveWheel::stopTurning(Wheel* wheel) {
-	wheel->setSpinStop();
-}

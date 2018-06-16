@@ -8,9 +8,6 @@
 
 
 
-enum RobotDriveState : uint8_t {
-	ROBOT_NOT_MOVING, ROBOT_FORWARD, ROBOT_BACKWARD, ROBOT_TURN_LEFT, ROBOT_TURN_RIGHT
-}; //all the robot drive states that are relevant to the robot
 
 enum MinMaxRange : uint8_t {
 	MIN, MAX
@@ -54,58 +51,44 @@ private:
 		
 };
 
-//base class for the basic Drive functions. This class need not be instantiated explicitly.
-class DriveWheel {
-public:
-	DriveWheel();
-protected:
-	
-	void turnForward(Wheel* wheel, int speed);
-
-	void turnBackward(Wheel* wheel, int speed);
-
-	void stopTurning(Wheel* wheel);
-
-};
 
 
-class Drive4Wheel: public DriveWheel{
+class Drive4Wheel {
 public:
 	Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
 		Wheel* LeftRearWheel, Wheel* RightRearWheel, int speedToleranceRange); //default constructor with 4 Wheel instatiation and speed tolerance 
 	//speed tolerance range ensure that the wheel speeds are clipped below that range from the absolute max and min  
-	static int maxDriveSpeed;
-	static int minDriveSpeed;
-	//approximately the actual robot wheel speeds allowed  
+	
+	
 	void initDrive4Wheel();  //initialize the drive speed for the drive4wheel object 
-	void goForward(int speed = minDriveSpeed);
 
-	void goBackward(int speed = minDriveSpeed);
-
-	void turnLeft(int leftWheelSpeed = minDriveSpeed,
-		int rightWheelSpeed = minDriveSpeed);
-
-	void turnRight(int leftWheelSpeed = minDriveSpeed,
-		int rightWheelSpeed = minDriveSpeed);
-
+	//methods to drive 
+	void goForward(int speed);
+	void goBackward(int speed);
+	void goLeft(int wheelSpeed, float speedRatio = 1.0, bool reverse = false );
+	void goRight(int leftWheelSpeed, float speedRatio = 1.0, bool reverse = false);
 	void stop();
 
+	enum DriveState : uint8_t {
+		DRIVE_STOP, DRIVE_FORWARD, DRIVE_BACKWARD, DRIVE_LEFT, DRIVE_RIGHT, DRIVE_BACKWARD_LEFT, DRIVE_BACKWARD_RIGHT
+	}; //all the robot drive states that are relevant to the Drive class 
 
-	
-	void swayLeft(int leftWheelSpeed = minDriveSpeed,
-					int rightWheelSpeed = maxDriveSpeed, 
-						bool reverse = false); //only to be used with joystick controls 
+	//methods to get and set _speedToleranceRange that updates the drive speed values 
+	int getSpeedToleranceRange();
+	void setSpeedToleranceRange(int speedTolerance);
 
-	void swayRight(int leftWheelSpeed = maxDriveSpeed,
-					int rightWheelSpeed = minDriveSpeed,
-						bool reverse = false); //only to be used with joystick controls
-
-	RobotDriveState robotDriveState(); //return to robot drive state based on the wheel spin conditions
-
-
+	//methods to get the drive speed values and current drive state 
+	int getDriveSpeed(MinMaxRange rangeValue);
+	DriveState getCurrentDriveState();
 
 private:
-	int _speedToleranceRange;
+	int _speedToleranceRange; //the tolerance between the absolute speeds of the Wheel instance and allowable drive speed
+	static int _maxDriveSpeed;
+	static int _minDriveSpeed;
+	DriveState _driveState; //return to robot drive state based on the wheel spin conditions
+
+	void setDriveSpeed(); //private method to update the drive speeds with the current _speedToleranceRange value
+
 	Wheel* _LeftFrontWheel;
 	Wheel* _RightFrontWheel;
 	Wheel* _LeftRearWheel;
