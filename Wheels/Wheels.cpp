@@ -3,27 +3,73 @@
 
 //default constructor: upon instantiation all the pin values and absolute speeds are stored in class variables 
 Wheel::Wheel(int pin1, int pin2, int pinSetSpeed, int minWheelAbsoluteSpeed, int maxWheelAbsoluteSpeed)
-	:pinForward(pin1), pinBackward(pin2), pinSetSpeed(pinSetSpeed), 
-	minWheelAbsoluteSpeed(minWheelAbsoluteSpeed), maxWheelAbsoluteSpeed(maxWheelAbsoluteSpeed)  {
+	:_pinForward(pin1), _pinBackward(pin2), _pinSetSpeed(pinSetSpeed), 
+	_minWheelAbsoluteSpeed(minWheelAbsoluteSpeed), _maxWheelAbsoluteSpeed(maxWheelAbsoluteSpeed)  {
 	initWheel();
 }
 
 //copy constructor 
 Wheel::Wheel(const Wheel& AWheel) {
-	pinForward = AWheel.pinForward;
-	pinBackward = AWheel.pinBackward;
-	pinSetSpeed = AWheel.pinSetSpeed;
-	minWheelAbsoluteSpeed = AWheel.minWheelAbsoluteSpeed;
-	maxWheelAbsoluteSpeed = AWheel.maxWheelAbsoluteSpeed;
+	_pinForward = AWheel._pinForward;
+	_pinBackward = AWheel._pinBackward;
+	_pinSetSpeed = AWheel._pinSetSpeed;
+	_minWheelAbsoluteSpeed = AWheel._minWheelAbsoluteSpeed;
+	_maxWheelAbsoluteSpeed = AWheel._maxWheelAbsoluteSpeed;
 }
 
 //called during instantiation automatically, sets-up the pins and state variables to appropriate states 
 void Wheel::initWheel() {
-	turnState = WHEEL_NO_TURN;
-	pinMode(pinForward, OUTPUT);
-	pinMode(pinBackward, OUTPUT);
-	pinMode(pinSetSpeed, OUTPUT);
+	_spinState = WHEEL_NO_SPIN;
+	pinMode(_pinForward, OUTPUT);
+	pinMode(_pinBackward, OUTPUT);
+	pinMode(_pinSetSpeed, OUTPUT);
 }
+
+// returns _spinState
+Wheel::WheelState Wheel::getCurrentWheelState() {
+	return _spinState;
+}
+
+//set spin Forward 
+void Wheel::setSpinForward(int speed) {
+	digitalWrite(_pinForward, HIGH);
+	digitalWrite(_pinBackward, LOW);
+	analogWrite(_pinSetSpeed, speed);
+	_spinState = WHEEL_SPIN_FORWARD;
+}
+
+//set spin Backward 
+void Wheel::setSpinBackward(int speed) {
+	digitalWrite(_pinForward, LOW);
+	digitalWrite(_pinBackward, HIGH);
+	analogWrite(_pinSetSpeed, speed);
+	_spinState = WHEEL_SPIN_BACKWARD;
+}
+
+//set spin Stop
+void Wheel::setSpinStop() {
+	digitalWrite(_pinForward, LOW);
+	digitalWrite(_pinBackward, LOW);
+	analogWrite(_pinSetSpeed, 0);
+	_spinState = WHEEL_NO_SPIN;
+}
+
+// return _max/_min Wheel Absolute Speeds 
+int Wheel::getWheelAbsoluteSpeed(MinMaxRange rangeValue) {
+	if (rangeValue == MIN)
+		return _minWheelAbsoluteSpeed;
+	else if (rangeValue == MAX)
+		return _maxWheelAbsoluteSpeed;
+	else
+		return NULL;
+}
+
+//resets the Absolute Speed values 
+void Wheel::setWheelAbsoluteSpeed(int minSpeedAbsolute, int maxSpeedAbsolute) {
+	_minWheelAbsoluteSpeed = minSpeedAbsolute;
+	_maxWheelAbsoluteSpeed = maxSpeedAbsolute;
+}
+
 
 //default constructor for 4 wheel drives robot 
 //stores the pointer of each wheel objects to local wheel object pointer for easy access 
@@ -41,10 +87,10 @@ int Drive4Wheel::maxDriveSpeed = 0;
 
 //called during the instantiation pf the Drive4Wheel class 
 void Drive4Wheel::initDrive4Wheel() {
-	minDriveSpeed = max(_LeftFrontWheel->minWheelAbsoluteSpeed, max(_RightFrontWheel->minWheelAbsoluteSpeed,
-		max(_LeftRearWheel->minWheelAbsoluteSpeed, _RightRearWheel->minWheelAbsoluteSpeed)));
-	maxDriveSpeed = min(_LeftFrontWheel->maxWheelAbsoluteSpeed, min(_RightFrontWheel->maxWheelAbsoluteSpeed,
-		min(_LeftRearWheel->maxWheelAbsoluteSpeed, _RightRearWheel->maxWheelAbsoluteSpeed)));
+	minDriveSpeed = max(_LeftFrontWheel->getWheelAbsoluteSpeed(MIN), max(_RightFrontWheel->getWheelAbsoluteSpeed(MIN),
+		max(_LeftRearWheel->getWheelAbsoluteSpeed(MIN), _RightRearWheel->getWheelAbsoluteSpeed(MIN))));
+	maxDriveSpeed = min(_LeftFrontWheel->getWheelAbsoluteSpeed(MAX), min(_RightFrontWheel->getWheelAbsoluteSpeed(MAX),
+		min(_LeftRearWheel->getWheelAbsoluteSpeed(MAX), _RightRearWheel->getWheelAbsoluteSpeed(MAX))));
 	//the minimum and maximum drivespeeds are evaluated from each absolute speed values of the wheels. 
 	minDriveSpeed = minDriveSpeed + _speedToleranceRange;
 	maxDriveSpeed = maxDriveSpeed - _speedToleranceRange;
@@ -147,28 +193,28 @@ void Drive4Wheel::swayRight(int leftWheelSpeed,
 
 //Drive4Wheels method to identify the drive state of the drive systems
 RobotDriveState Drive4Wheel::robotDriveState() {
-	if (_LeftFrontWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_LeftRearWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_RightFrontWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_RightRearWheel->turnState == Wheel::WHEEL_TURN_BACKWARD)
+	if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD)
 		return ROBOT_TURN_RIGHT;
 
-	else if (_LeftFrontWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_LeftRearWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_RightFrontWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_RightRearWheel->turnState == Wheel::WHEEL_TURN_FORWARD)
+	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD)
 		return ROBOT_TURN_LEFT;
 
-	else if (_LeftFrontWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_LeftRearWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_RightFrontWheel->turnState == Wheel::WHEEL_TURN_FORWARD &&
-		_RightRearWheel->turnState == Wheel::WHEEL_TURN_FORWARD)
+	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD &&
+		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_FORWARD)
 		return ROBOT_FORWARD;
 
-	else if (_LeftFrontWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_LeftRearWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_RightFrontWheel->turnState == Wheel::WHEEL_TURN_BACKWARD &&
-		_RightRearWheel->turnState == Wheel::WHEEL_TURN_BACKWARD)
+	else if (_LeftFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_LeftRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_RightFrontWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD &&
+		_RightRearWheel->getCurrentWheelState() == Wheel::WHEEL_SPIN_BACKWARD)
 		return ROBOT_BACKWARD;
 
 
@@ -179,24 +225,15 @@ RobotDriveState Drive4Wheel::robotDriveState() {
 DriveWheel::DriveWheel() {}
 
 void DriveWheel::turnForward(Wheel* wheel, int speed) {
-	speed = constrain(speed, wheel->minWheelAbsoluteSpeed, wheel->maxWheelAbsoluteSpeed);
-	digitalWrite(wheel->pinForward, HIGH);
-	digitalWrite(wheel->pinBackward, LOW);
-	analogWrite(wheel->pinSetSpeed, speed);
-	wheel->turnState = Wheel::WHEEL_TURN_FORWARD;
+	speed = constrain(speed, wheel->getWheelAbsoluteSpeed(MIN), wheel->getWheelAbsoluteSpeed(MAX));
+	wheel->setSpinForward(speed);
 }
 
 void DriveWheel::turnBackward(Wheel* wheel, int speed) {
-	speed = constrain(speed, wheel->minWheelAbsoluteSpeed, wheel->maxWheelAbsoluteSpeed);
-	digitalWrite(wheel->pinForward, LOW);
-	digitalWrite(wheel->pinBackward, HIGH);
-	analogWrite(wheel->pinSetSpeed, speed);
-	wheel->turnState= Wheel::WHEEL_TURN_BACKWARD;
+	speed = constrain(speed, wheel->getWheelAbsoluteSpeed(MIN), wheel->getWheelAbsoluteSpeed(MAX));
+	wheel->setSpinBackward(speed);
 }
 
 void DriveWheel::stopTurning(Wheel* wheel) {
-	analogWrite(wheel->pinSetSpeed, 0);
-	digitalWrite(wheel->pinForward, LOW);
-	digitalWrite(wheel->pinBackward, LOW);
-	wheel->turnState = Wheel::WHEEL_NO_TURN;
+	wheel->setSpinStop();
 }
