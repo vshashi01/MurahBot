@@ -32,6 +32,7 @@ Wheel::WheelState Wheel::getCurrentWheelState() {
 
 //set spin Forward 
 void Wheel::setSpinForward(int speed) {
+	speed = limitWheelSpeed(speed);
 	digitalWrite(_pinForward, HIGH);
 	digitalWrite(_pinBackward, LOW);
 	analogWrite(_pinSetSpeed, speed);
@@ -40,6 +41,7 @@ void Wheel::setSpinForward(int speed) {
 
 //set spin Backward 
 void Wheel::setSpinBackward(int speed) {
+	speed = limitWheelSpeed(speed);
 	digitalWrite(_pinForward, LOW);
 	digitalWrite(_pinBackward, HIGH);
 	analogWrite(_pinSetSpeed, speed);
@@ -68,6 +70,13 @@ int Wheel::getWheelAbsoluteSpeed(MinMaxRange rangeValue) {
 void Wheel::setWheelAbsoluteSpeed(int minSpeedAbsolute, int maxSpeedAbsolute) {
 	_minWheelAbsoluteSpeed = minSpeedAbsolute;
 	_maxWheelAbsoluteSpeed = maxSpeedAbsolute;
+}
+
+int Wheel::limitWheelSpeed(int wheelSpeed) {
+	if (wheelSpeed > _maxWheelAbsoluteSpeed)wheelSpeed = _maxWheelAbsoluteSpeed;
+	else if (wheelSpeed < _minWheelAbsoluteSpeed)wheelSpeed = _minWheelAbsoluteSpeed;
+	else wheelSpeed = wheelSpeed;
+	return wheelSpeed;
 }
 
 
@@ -109,6 +118,13 @@ int Drive4Wheel::getSpeedToleranceRange() {
 void Drive4Wheel::setSpeedToleranceRange(int speedTolerance) {
 	_speedToleranceRange = speedTolerance;
 	setDriveSpeed();
+}
+
+int Drive4Wheel::limitDriveSpeed(int driveSpeed) {
+	if (driveSpeed > _maxDriveSpeed)driveSpeed = _maxDriveSpeed;
+	else if (driveSpeed < _minDriveSpeed)driveSpeed = _minDriveSpeed;
+	else driveSpeed = driveSpeed;
+	return driveSpeed;
 }
 
 //Drive4Wheel methods for driving 
@@ -182,7 +198,7 @@ Drive4Wheel::DriveState Drive4Wheel::getCurrentDriveState() {
 	return _driveState;	
 }
 
-//private function to update the drive speed values
+//private method to update the drive speed values
 void Drive4Wheel::setDriveSpeed() {
 	_minDriveSpeed = max(_LeftFrontWheel->getWheelAbsoluteSpeed(MIN), max(_RightFrontWheel->getWheelAbsoluteSpeed(MIN),
 		max(_LeftRearWheel->getWheelAbsoluteSpeed(MIN), _RightRearWheel->getWheelAbsoluteSpeed(MIN))));

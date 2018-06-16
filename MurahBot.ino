@@ -264,14 +264,14 @@ void joystickDrive() {
 	if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_STOP) murahDrive.stop();
 
 
-	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goForward(speedRun);
-	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_BACKWARD) murahDrive.goBackward(speedRun);
-	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goRight(speedTurn, 1.0);
-	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goLeft(speedTurn, 1.0);
+	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goForward(murahDrive.limitDriveSpeed(speedRun));
+	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_BACKWARD) murahDrive.goBackward(murahDrive.limitDriveSpeed(speedRun));
+	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goRight(murahDrive.limitDriveSpeed(speedTurn), 1.0);
+	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goLeft(murahDrive.limitDriveSpeed(speedTurn), 1.0);
 	//else if (dirStateX == DRIVE_LEFT && dirStateY == DRIVE_FORWARD) murahDrive.goLeft(speedTurn, 0.8, false);
-	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_LEFT) murahDrive.goLeft(speedTurn, 0.8, true);
+	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_LEFT) murahDrive.goLeft(murahDrive.limitDriveSpeed(speedTurn), 0.8, true);
 	//else if (dirStateX == DRIVE_RIGHT && dirStateY == DRIVE_FORWARD) murahDrive.goRight(speedTurn, 0.8, false);
-	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_RIGHT) murahDrive.goRight(speedTurn, 0.8, true);
+	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_RIGHT) murahDrive.goRight(murahDrive.limitDriveSpeed(speedTurn), 0.8, true);
 
 
 	else murahDrive.stop();

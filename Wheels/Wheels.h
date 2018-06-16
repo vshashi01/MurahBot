@@ -48,7 +48,8 @@ private:
 	int _minWheelAbsoluteSpeed;  //lowest speed the wheel can turn 
 	int _maxWheelAbsoluteSpeed;	//highest speed the wheel can turn 
 
-		
+	int limitWheelSpeed(int wheelSpeed); //checks if wheel speed within absolute range, if not clips it 
+			
 };
 
 
@@ -62,6 +63,7 @@ public:
 	
 	void initDrive4Wheel();  //initialize the drive speed for the drive4wheel object 
 
+	int limitDriveSpeed(int driveSpeed); //method to check and limit 
 	//methods to drive 
 	void goForward(int speed);
 	void goBackward(int speed);
