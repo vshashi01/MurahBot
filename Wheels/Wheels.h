@@ -67,12 +67,15 @@ public:
 	//methods to drive 
 	void goForward(int speed);
 	void goBackward(int speed);
-	void goLeft(int wheelSpeed, float speedRatio = 1.0, bool reverse = false );
-	void goRight(int leftWheelSpeed, float speedRatio = 1.0, bool reverse = false);
+	void goLeft(int wheelSpeed, float speedRatio = 1.0);
+	void goRight(int wheelSpeed, float speedRatio = 1.0);
+	void swayLeft(int wheelSpeed, float speedRatio = 0.8, bool reverse = false);
+	void swayRight(int wheelSpeed, float speedRatio = 0.8, bool reverse = false);
 	void stop();
 
 	enum DriveState : uint8_t {
-		DRIVE_STOP, DRIVE_FORWARD, DRIVE_BACKWARD, DRIVE_LEFT, DRIVE_RIGHT, DRIVE_BACKWARD_LEFT, DRIVE_BACKWARD_RIGHT
+		DRIVE_STOP, DRIVE_FORWARD, DRIVE_BACKWARD, DRIVE_LEFT, DRIVE_RIGHT, DRIVE_FORWARD_LEFT,
+		DRIVE_FORWARD_RIGHT, DRIVE_BACKWARD_LEFT, DRIVE_BACKWARD_RIGHT
 	}; //all the robot drive states that are relevant to the Drive class 
 
 	//methods to get and set _speedToleranceRange that updates the drive speed values 
