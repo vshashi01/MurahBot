@@ -1,7 +1,7 @@
 /*###############################################################################################################
  Project Name: MurahBot												   
 
- Current Version: 0.3.5												   
+ Current Version: 0.3.6												   
 
 
  Description: A 4WD mobile robot made of 4 motors, 2 Dual H Bridge Motor  
@@ -45,8 +45,7 @@ Wheel* WheelRearLeft = new Wheel(50, 51, 7);
 Wheel* WheelRearRight = new Wheel(52, 53, 6);
 
 
-
-int speedTolerance = 30;
+int speedTolerance = 30; //range of tolerance for drive speeds
 Drive4Wheel murahDrive(WheelFrontLeft, WheelFrontRight,
 	WheelRearLeft, WheelRearRight, speedTolerance);
 
@@ -75,11 +74,11 @@ enum ButtonState
 enum SystemStates {
 	ACTIVE, PASSIVE, NO_STATE
 };
-
+//state variables
 SystemStates prevSystemState = NO_STATE;
-SystemStates currSystemState = PASSIVE; // turns on the robot and kills it //use enum to apply this 
+SystemStates currSystemState = PASSIVE; // 
 SystemStates currBlynkState = PASSIVE;
-int ledPin = 13; 
+int ledPin = 13; //on-board LED 
 
 
 
@@ -88,8 +87,8 @@ int ledPin = 13;
 // Scheduler and Tasks instantiation
 Scheduler MurahBotSchedule;
 Task taskUpdateButton(TASK_IMMEDIATE, TASK_FOREVER, &callbackButtonState, &MurahBotSchedule);
-Task taskEnableDisableMurahBot(TASK_IMMEDIATE, TASK_ONCE, &callbackEnableDisableMurahBot, &MurahBotSchedule, false);
-Task taskUpdateDriveState(50, TASK_FOREVER, &callbackJoystickDrive, &MurahBotSchedule, false);
+Task taskEnableDisableDrive(TASK_IMMEDIATE, TASK_ONCE, &callbackEnableDisableDrive, &MurahBotSchedule, false);
+Task taskDrive(50, TASK_FOREVER, &callbackPrimaryJoystickDrive, &MurahBotSchedule, false);
 Task taskRunBlynk(TASK_IMMEDIATE, TASK_FOREVER, &callbackBlynk, &MurahBotSchedule, false, &onEnableBlynk);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,11 +101,11 @@ void callbackButtonState() {
 				return;
 			}
 			else if (prevSystemState == currSystemState) {
-				taskEnableDisableMurahBot.enable();
+				taskEnableDisableDrive.enable();
 				return;
 			}
 			else {
-				taskEnableDisableMurahBot.restart();
+				taskEnableDisableDrive.restart();
 				return;
 			}
 		}
@@ -117,54 +116,44 @@ void callbackButtonState() {
 		//Force next iteration callbackButtonAction if needed 
 }
 
-// updates the Button Actions after the Button is pressed 
+//updates the Button Actions after the Button status are updated //if neccessary
 void callbackButtonAction() {
 	taskUpdateButton.setCallback(&callbackButtonState);
 }
 
-void callbackEnableDisableMurahBot() {
+// updates the Enable and Disable the drive systems
+void callbackEnableDisableDrive() {
 	if (currSystemState == PASSIVE) {
 		prevSystemState = currSystemState;
-		currSystemState = ACTIVE;
+		currSystemState = ACTIVE; //changes the system state 
 		Serial.println("Bringing drive systems online....");  
-		taskUpdateDriveState.enable();
-		if (currBlynkState == PASSIVE)taskRunBlynk.enable();
-		else;
+		taskDrive.enable();
+		if (currBlynkState == PASSIVE)taskRunBlynk.enable(); //enable only once 
 	}
 	else {
 		prevSystemState = currSystemState;
 		currSystemState = PASSIVE;
 		Serial.println("Shutting down drive systems...");
-
-
 		murahDrive.stop(); //force stop the robot
-
-
-		taskUpdateDriveState.disable();
-	}
-	
+		taskDrive.disable();
+	}	
 }
 
 
-void callbackJoystickDrive() {
-	joystickDrive();
-	taskUpdateDriveState.setCallback(&callbackJoystickDrive);
-}
-
-// runs Blynk
+//callback Blynk app for update
 void callbackBlynk() {
 	Blynk.run();
 	taskRunBlynk.setCallback(callbackBlynk);
 }
 
-
-bool onEnableOfEnableDisableMurahBot() {
-	taskEnableDisableMurahBot.setCallback(&callbackEnableDisableMurahBot);
-	taskEnableDisableMurahBot.forceNextIteration();
+//ensures the callbackEnableDisableDrive run in the next iteration
+bool onEnableOfEnableDisableDrive() {
+	taskEnableDisableDrive.setCallback(&callbackEnableDisableDrive);
+	taskEnableDisableDrive.forceNextIteration();
 	return true;
 }
 
-
+//ensures the Blynk app is connected 
 bool onEnableBlynk() {
 	Blynk.begin(auth, MurahBotBT);
 	currBlynkState = ACTIVE;
@@ -172,116 +161,118 @@ bool onEnableBlynk() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//joystick control variables and functions 
+//drive control variables and functions 
+//to be ported to a separate .ino file in the future
+
+//constant values for jostick pad region
 const byte X_THRESHOLD_LOW = 108; //X: 128 - 20
 const byte X_THRESHOLD_HIGH = 148; //X: 128 + 20   
 const byte Y_THRESHOLD_LOW = 108;
 const byte Y_THRESHOLD_HIGH = 148;
 
-int joystickX = 127; // initialized to the center position 127
-int joystickY = 127; // initilized to the center position
+// initialized the X and Y values to the center position 127
+int joystickX = 127; 
+int joystickY = 127; 
 
-Drive4Wheel::DriveState dirStateX; // defined using Wheels Macros 
-Drive4Wheel::DriveState dirStateY; // to keep robot wheel action state in 2 directions  
+//ratio range for speedRatios as a multiple of 100
+float smallestRatio = 45;
+float biggestRatio = 60;
 
-int speedRun; //forward backward speed 
-int speedTurn; //turn speed 
-
+//Blynk input of joystick values 
 BLYNK_WRITE(V1) {
 	joystickX = param[0].asInt();
 	joystickY = param[1].asInt();
-
-	//Blynk input for joystick values 
 }
 
-
-void mapJoystick() {
-	if (joystickX < X_THRESHOLD_LOW) {
-		dirStateX = Drive4Wheel::DRIVE_LEFT;
-		speedTurn = map(joystickX, X_THRESHOLD_LOW, 0,
-			murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-
-		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = Drive4Wheel::DRIVE_BACKWARD_LEFT;
-			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		}
-		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = Drive4Wheel::DRIVE_FORWARD;
-			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-
-		}
-		else {
-			dirStateY = Drive4Wheel::DRIVE_STOP;
-			speedRun = 0;
-		}
+//updates the Primary controls for Joystick in four directions: Front, Back, Left, Right. 
+void callbackPrimaryJoystickDrive() {
+	//boolean conditions for the threshold regions
+	bool joystickXInThreshold = (joystickX > X_THRESHOLD_LOW && joystickX < X_THRESHOLD_HIGH);
+	bool joystickYInThreshold = (joystickY > Y_THRESHOLD_LOW && joystickY < Y_THRESHOLD_HIGH);
+	
+	//if joystick not in the threshold region sets callback to secondaryJoystickDrive
+	if (!joystickXInThreshold && !joystickYInThreshold) {
+		taskDrive.setCallback(&callbackSecondaryJoystickDrive);
+		return;
 	}
-	else if (joystickX > X_THRESHOLD_HIGH) {
-		dirStateX = Drive4Wheel::DRIVE_RIGHT;
-		speedTurn = map(joystickX, X_THRESHOLD_HIGH, 255,
-			murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		if (joystickY < Y_THRESHOLD_LOW) {
-			dirStateY = Drive4Wheel::DRIVE_BACKWARD_RIGHT;
-			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		}
-		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = Drive4Wheel::DRIVE_RIGHT;
-			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		}
-		else {
-			dirStateY = Drive4Wheel::DRIVE_STOP;
-			speedRun = 0;
-		}
+
+	//initializes the current allowable driveSpeeds as temp variable 
+	int minSpeed = murahDrive.getDriveSpeed(MIN);
+	int maxSpeed = murahDrive.getDriveSpeed(MAX);
+
+	// temp variable 
+	int speed; 
+
+	//various statement to check the appropriate Primary actions
+	if (joystickXInThreshold && joystickYInThreshold) {
+		murahDrive.stop();	//stop the drive if in absolute center	
 	}
-	else {
-		dirStateX = Drive4Wheel::DRIVE_STOP;
-		speedTurn = 0;
-		if (joystickY < Y_THRESHOLD_LOW) {
-
-			dirStateY = Drive4Wheel::DRIVE_BACKWARD;
-			speedRun = (joystickY, Y_THRESHOLD_LOW, 0,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		}
-		else if (joystickY > Y_THRESHOLD_HIGH) {
-			dirStateY = Drive4Wheel::DRIVE_FORWARD;
-			speedRun = (joystickY, Y_THRESHOLD_HIGH, 255,
-				murahDrive.getDriveSpeed(MIN), murahDrive.getDriveSpeed(MAX));
-		}
-		else {
-			dirStateY = Drive4Wheel::DRIVE_STOP;
-			speedRun = 0;
-
-
-		}
+	else if (joystickY < Y_THRESHOLD_LOW && joystickXInThreshold) {
+		speed = map(joystickY, Y_THRESHOLD_LOW, 0, minSpeed, maxSpeed); //map speed between joystick coordinate and allowable drive Speeds
+		murahDrive.goBackward(speed);
 	}
+	else if (joystickY > Y_THRESHOLD_HIGH && joystickXInThreshold) {
+		speed = map(joystickY, Y_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
+		murahDrive.goForward(speed);
+	}
+	else if (joystickX < X_THRESHOLD_LOW && joystickYInThreshold) {
+		speed = map(joystickX, X_THRESHOLD_LOW, 0, minSpeed, maxSpeed);
+		murahDrive.goLeft(speed);
+	}
+	else if (joystickX > X_THRESHOLD_HIGH && joystickYInThreshold) {
+		speed = map(joystickX, X_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
+		murahDrive.goRight(speed);
+	}
+	else murahDrive.stop(); //just in case call stop always 
+
+	taskDrive.setCallback(&callbackDisplayDriveState);	
 }
 
-void joystickDrive() {
-	mapJoystick();
-	if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_STOP) murahDrive.stop();
+//updates the Secondary controls for Joystick: Sway Left and Right in Forward and Backward
+void callbackSecondaryJoystickDrive() {
+	//initializes the current allowable drive Speeds
+	int minSpeed = murahDrive.getDriveSpeed(MIN);
+	int maxSpeed = murahDrive.getDriveSpeed(MAX);
 
+	//temp variables
+	int speed;
+	float turnRatio = 0; 
 
-	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goForward(murahDrive.limitDriveSpeed(speedRun));
-	else if (dirStateX == Drive4Wheel::DRIVE_STOP && dirStateY == Drive4Wheel::DRIVE_BACKWARD) murahDrive.goBackward(murahDrive.limitDriveSpeed(speedRun));
-	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goRight(murahDrive.limitDriveSpeed(speedTurn), 1.0);
-	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_FORWARD) murahDrive.goLeft(murahDrive.limitDriveSpeed(speedTurn), 1.0);
-	//else if (dirStateX == DRIVE_LEFT && dirStateY == DRIVE_FORWARD) murahDrive.goLeft(speedTurn, 0.8, false);
-	else if (dirStateX == Drive4Wheel::DRIVE_LEFT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_LEFT) murahDrive.goLeft(murahDrive.limitDriveSpeed(speedTurn), 0.8, true);
-	//else if (dirStateX == DRIVE_RIGHT && dirStateY == DRIVE_FORWARD) murahDrive.goRight(speedTurn, 0.8, false);
-	else if (dirStateX == Drive4Wheel::DRIVE_RIGHT && dirStateY == Drive4Wheel::DRIVE_BACKWARD_RIGHT) murahDrive.goRight(murahDrive.limitDriveSpeed(speedTurn), 0.8, true);
-
-
+	//various statements to check for the Secondary conditions
+	if (joystickX < X_THRESHOLD_LOW && joystickY > Y_THRESHOLD_HIGH) {
+		speed = map(joystickY, Y_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
+		turnRatio = map(joystickX, X_THRESHOLD_LOW, 0, smallestRatio, biggestRatio); //map speed ratio 
+		murahDrive.swayLeft(speed, (turnRatio / 100)); //ratio to be converted to float value  
+	}
+	else if (joystickX < X_THRESHOLD_LOW && joystickY < Y_THRESHOLD_LOW) {
+		speed = map(joystickY, Y_THRESHOLD_LOW, 0, minSpeed, maxSpeed);
+		turnRatio = map(joystickX, X_THRESHOLD_LOW, 0, smallestRatio, biggestRatio);
+		murahDrive.swayLeft(speed, (turnRatio / 100), true);
+	}
+	else if (joystickX > X_THRESHOLD_HIGH && joystickY > Y_THRESHOLD_HIGH) {
+		speed = map(joystickY, Y_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
+		turnRatio = map(joystickX, X_THRESHOLD_HIGH, 255, smallestRatio, biggestRatio);
+		murahDrive.swayRight(speed, (turnRatio / 100));
+	}
+	else if (joystickX > X_THRESHOLD_HIGH && joystickY < Y_THRESHOLD_LOW) {
+		speed = map(joystickY, Y_THRESHOLD_LOW, 0, minSpeed, maxSpeed);
+		turnRatio = map(joystickX, X_THRESHOLD_HIGH, 255, smallestRatio, biggestRatio);
+		murahDrive.swayRight(speed, (turnRatio / 100), true);
+	}
 	else murahDrive.stop();
 
-	//assess if needed, if NOT must remove in the future
-	Serial.print("The robot's drive state: ");
-	if(murahDrive.getCurrentDriveState() != Drive4Wheel::DRIVE_STOP)	Serial.println("MOVING");
-	else Serial.println("NOT MOVING");
+	taskDrive.setCallback(&callbackDisplayDriveState);
 
 }
+
+//update drive state to be changes to update on Blynk app in future
+void callbackDisplayDriveState() {
+	Serial.print("Drive State: ");
+	Serial.println(murahDrive.getCurrentDriveState());
+
+	taskDrive.setCallback(&callbackPrimaryJoystickDrive);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup()

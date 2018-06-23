@@ -146,7 +146,28 @@ void Drive4Wheel::goBackward(int wheelSpeed) {
 	_driveState = DRIVE_BACKWARD;
 }
 
-void Drive4Wheel::goLeft(int wheelSpeed, float speedRatio, bool reverse) {
+void Drive4Wheel::goLeft(int wheelSpeed, float speedRatio) {
+	_RightFrontWheel->setSpinForward(wheelSpeed);
+	_RightRearWheel->setSpinForward(wheelSpeed);
+	_LeftFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+	_LeftRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+
+	_driveState = DRIVE_LEFT;
+		
+}
+
+void Drive4Wheel::goRight(int wheelSpeed, float speedRatio) {
+
+	_LeftFrontWheel->setSpinForward(wheelSpeed);
+	_LeftRearWheel->setSpinForward(wheelSpeed);
+	_RightFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
+	_RightRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+
+	_driveState = DRIVE_RIGHT;
+	
+}
+
+void Drive4Wheel::swayLeft(int wheelSpeed, float speedRatio, bool reverse) {
 	if (reverse == true) {
 		_LeftFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
 		_LeftRearWheel->setSpinBackward(wheelSpeed*speedRatio);
@@ -156,16 +177,16 @@ void Drive4Wheel::goLeft(int wheelSpeed, float speedRatio, bool reverse) {
 		_driveState = DRIVE_BACKWARD_LEFT;
 	}
 	else {
+		_LeftFrontWheel->setSpinForward(wheelSpeed*speedRatio);
+		_LeftRearWheel->setSpinForward(wheelSpeed*speedRatio);
 		_RightFrontWheel->setSpinForward(wheelSpeed);
 		_RightRearWheel->setSpinForward(wheelSpeed);
-		_LeftFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
-		_LeftRearWheel->setSpinBackward(wheelSpeed*speedRatio);
 
-		_driveState = DRIVE_LEFT;
-	}	
+		_driveState = DRIVE_FORWARD_LEFT;
+	}
 }
 
-void Drive4Wheel::goRight(int wheelSpeed, float speedRatio, bool reverse) {
+void Drive4Wheel::swayRight(int wheelSpeed, float speedRatio, bool reverse) {
 	if (reverse == true) {
 		_LeftFrontWheel->setSpinBackward(wheelSpeed);
 		_LeftRearWheel->setSpinBackward(wheelSpeed);
@@ -177,11 +198,11 @@ void Drive4Wheel::goRight(int wheelSpeed, float speedRatio, bool reverse) {
 	else {
 		_LeftFrontWheel->setSpinForward(wheelSpeed);
 		_LeftRearWheel->setSpinForward(wheelSpeed);
-		_RightFrontWheel->setSpinBackward(wheelSpeed*speedRatio);
-		_RightRearWheel->setSpinBackward(wheelSpeed*speedRatio);
+		_RightFrontWheel->setSpinForward(wheelSpeed*speedRatio);
+		_RightRearWheel->setSpinForward(wheelSpeed*speedRatio);
 
-		_driveState = DRIVE_RIGHT;
-	}	
+		_driveState = DRIVE_FORWARD_RIGHT;
+	}
 }
 
 void Drive4Wheel::stop() {
