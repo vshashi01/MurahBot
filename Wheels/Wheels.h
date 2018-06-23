@@ -5,15 +5,12 @@
 #ifndef _WHEELS_h
 #define _WHEELS_h
 
-
-
-
-
+//generalized enum to denote min max quantifiers
 enum MinMaxRange : uint8_t {
 	MIN, MAX
-}; //generalized enum to denote min max quantifiers
+}; 
 
-// class to initialize the wheels of the robot. ONE instance for EACH wheel!!
+//class to initialize the wheels of the robot. ONE instance for EACH wheel!!
 class Wheel {
 
 public:
@@ -53,17 +50,18 @@ private:
 };
 
 
-
 class Drive4Wheel {
 public:
 	Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
 		Wheel* LeftRearWheel, Wheel* RightRearWheel, int speedToleranceRange); //default constructor with 4 Wheel instatiation and speed tolerance 
 	//speed tolerance range ensure that the wheel speeds are clipped below that range from the absolute max and min  
 	
-	
-	void initDrive4Wheel();  //initialize the drive speed for the drive4wheel object 
+	//initialize the drive speed for the drive4wheel object 
+	void initDrive4Wheel();  
 
-	int limitDriveSpeed(int driveSpeed); //method to check and limit 
+	//method to check and limit 
+	int limitDriveSpeed(int driveSpeed); 
+	
 	//methods to drive 
 	void goForward(int speed);
 	void goBackward(int speed);
