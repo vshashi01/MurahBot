@@ -87,6 +87,9 @@
   <ItemGroup>
     <ClInclude Include="__vm\.MurahBot.vsarduino.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MurahBot.cpp" />
+  </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
   </PropertyGroup>
