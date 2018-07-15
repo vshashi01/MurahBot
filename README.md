@@ -105,7 +105,7 @@ Many people would want to develop the program on the basic Arduino IDE. I am not
 Since [VS2017 Community](https://visualstudio.microsoft.com/downloads/) is a free version, any hobbyist or student developer can use it for their own problem. [Visual Micro](https://www.visualmicro.com/) too is very powerful with Debugging tools for your development. 
 
 ## What's next?
-Currently I am confilcited with many parallel ideas and goals for the MurahBot **(cry for Colloborators to Spar and work with)**. 
+Currently I am conflicted with many parallel ideas and goals for the MurahBot **(cry for collaborators to spar and work with)**. 
 
   - Porting the current code base to PlatformIO for a more robust implementation of MurahBot
   - Adding a second microprocessor to support Preemptive Interrupt Routines for Cheap IR Encoders for Wheel Kinematics and Ultrasonic Sensors for Obstacle Detection 
