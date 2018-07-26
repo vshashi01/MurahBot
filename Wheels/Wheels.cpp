@@ -83,10 +83,10 @@ int Wheel::limitWheelSpeed(int wheelSpeed) {
 //default constructor for 4 wheel drives robot 
 //stores the pointer of each wheel objects to local wheel object pointer for easy access 
 //stores the speed tolerance range to set the min and max drive speed
-Drive4Wheel::Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
-	Wheel* LeftRearWheel, Wheel* RightRearWheel, int speedToleranceRange)
-	:_LeftFrontWheel(LeftFrontWheel), _RightFrontWheel(RightFrontWheel),
-	_LeftRearWheel(LeftRearWheel), _RightRearWheel(RightRearWheel), _speedToleranceRange(speedToleranceRange) {
+Drive4Wheel::Drive4Wheel(Wheel& LeftFrontWheel, Wheel& RightFrontWheel,
+	Wheel& LeftRearWheel, Wheel& RightRearWheel, int speedToleranceRange)
+	:_LeftFrontWheel(&LeftFrontWheel), _RightFrontWheel(&RightFrontWheel),
+	_LeftRearWheel(&LeftRearWheel), _RightRearWheel(&RightRearWheel), _speedToleranceRange(speedToleranceRange) {
 	initDrive4Wheel();
 }
 

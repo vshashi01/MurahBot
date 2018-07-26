@@ -29,20 +29,35 @@ External Libraries/App used:
 #include <Wheels.h>
 #include <Arduino.h>
 #include <BlynkSimpleSerialBLE.h>
+#include <EnableInterrupt.h>
 
 
 ///////////////////////////////////////////////////////////////////////////
 //Bluetooth and Blynk related declarations 
 char auth[] = "66390b83798e4495aa9d6c23724f2181"; //Blynk Authorization code
+												  
+///////////////////////////////////////////////////////////////////////////
+#define RearLeftEncoderPin 20 //test pinchange interrupt
+#define RearRightEncoderPin 21
+#define FrontLeftEncoderPin 18
+#define FrontRightEncoderPin 19
 
 
+
+volatile int RearLeftWheelTurns = 0;
+volatile int RearRightWheelTurns = 0;
+volatile int FrontLeftWheelTurns = 0;
+volatile int FrontRightWheelTurns = 0;
+
+volatile bool counting = false;
+unsigned long startTime;
 
 ///////////////////////////////////////////////////////////////////////////
 // Wheel class and Drive4Wheel class instantiation 
-Wheel* WheelFrontLeft = new Wheel(46, 47, 5);
-Wheel* WheelFrontRight = new Wheel(48, 49, 4);
-Wheel* WheelRearLeft = new Wheel(50, 51, 7);
-Wheel* WheelRearRight = new Wheel(52, 53, 6);
+Wheel WheelFrontLeft(42, 43, 11);
+Wheel WheelFrontRight(38, 39, 10);
+Wheel WheelRearLeft(30, 31, 9);
+Wheel WheelRearRight(34, 35, 8);
 
 
 int speedTolerance = 30; //range of tolerance for drive speeds
@@ -63,14 +78,6 @@ Bounce ButtonRobotStartStop(buttonPinRobotStartStop, 10);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Global Variable Initialization 
-
-/*
-//need to assess if needed in the future
-enum ButtonState
-{
-Changed, Not_Changed
-};
-*/
 enum SystemStates {
 	ACTIVE, PASSIVE, NO_STATE
 };
@@ -85,13 +92,26 @@ int ledPin = 13; //on-board LED
 
 void callbackButtonState();
 void callbackButtonAction();
+
+bool onEnableOfEnableDisableDrive();
 void callbackEnableDisableDrive();
 void callbackBlynk();
-bool onEnableOfEnableDisableDrive();
 bool onEnableBlynk();
+
+
 void callbackPrimaryJoystickDrive();
 void callbackSecondaryJoystickDrive();
 void callbackDisplayDriveState();
+
+void callbackattachInterrupt();
+void callbackdetachInterrupt();
+bool onEnableInterrupt();
+void onDisableInterrupt();
+
+void RearLeftWheelTurnsCount();
+void RearRightWheelTurnsCount();
+void FrontLeftWheelTurnsCount();
+void FrontRightWheelTurnsCount();
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,6 +121,8 @@ Task taskUpdateButton(TASK_IMMEDIATE, TASK_FOREVER, &callbackButtonState, &Murah
 Task taskEnableDisableDrive(TASK_IMMEDIATE, TASK_ONCE, &callbackEnableDisableDrive, &MurahBotSchedule, false);
 Task taskDrive(50, TASK_FOREVER, &callbackPrimaryJoystickDrive, &MurahBotSchedule, false);
 Task taskRunBlynk(TASK_IMMEDIATE, TASK_FOREVER, &callbackBlynk, &MurahBotSchedule, false, &onEnableBlynk);
+Task interruptCount(TASK_IMMEDIATE, TASK_ONCE, &callbackattachInterrupt, &MurahBotSchedule, false, &onEnableInterrupt, &onDisableInterrupt);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // updates various button states  
@@ -247,28 +269,24 @@ void callbackSecondaryJoystickDrive() {
 
 	//temp variables
 	int speed;
-	float turnRatio = 0;
+	float swayRatio = 0.45;
 
 	//various statements to check for the Secondary conditions
 	if (joystickX < X_THRESHOLD_LOW && joystickY > Y_THRESHOLD_HIGH) {
 		speed = map(joystickY, Y_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
-		turnRatio = map(joystickX, X_THRESHOLD_LOW, 0, smallestRatio, biggestRatio); //map speed ratio 
-		murahDrive.swayLeft(speed, (turnRatio / 100)); //ratio to be converted to float value  
+		murahDrive.swayLeft(speed, swayRatio, false);   
 	}
 	else if (joystickX < X_THRESHOLD_LOW && joystickY < Y_THRESHOLD_LOW) {
 		speed = map(joystickY, Y_THRESHOLD_LOW, 0, minSpeed, maxSpeed);
-		turnRatio = map(joystickX, X_THRESHOLD_LOW, 0, smallestRatio, biggestRatio);
-		murahDrive.swayLeft(speed, (turnRatio / 100), true);
+		murahDrive.swayLeft(speed, swayRatio, true);
 	}
 	else if (joystickX > X_THRESHOLD_HIGH && joystickY > Y_THRESHOLD_HIGH) {
 		speed = map(joystickY, Y_THRESHOLD_HIGH, 255, minSpeed, maxSpeed);
-		turnRatio = map(joystickX, X_THRESHOLD_HIGH, 255, smallestRatio, biggestRatio);
-		murahDrive.swayRight(speed, (turnRatio / 100));
+		murahDrive.swayRight(speed, swayRatio, false);
 	}
 	else if (joystickX > X_THRESHOLD_HIGH && joystickY < Y_THRESHOLD_LOW) {
 		speed = map(joystickY, Y_THRESHOLD_LOW, 0, minSpeed, maxSpeed);
-		turnRatio = map(joystickX, X_THRESHOLD_HIGH, 255, smallestRatio, biggestRatio);
-		murahDrive.swayRight(speed, (turnRatio / 100), true);
+		murahDrive.swayRight(speed,swayRatio, true);
 	}
 	else murahDrive.stop();
 
@@ -278,15 +296,24 @@ void callbackSecondaryJoystickDrive() {
 
 //update drive state to be changes to update on Blynk app in future
 void callbackDisplayDriveState() {
-	Serial.print("Drive State: ");
-	Serial.println(murahDrive.getCurrentDriveState());
+	//Serial.print("Drive State: ");
+	//Serial.println(murahDrive.getCurrentDriveState());
 
+	if (counting == false && murahDrive.getCurrentDriveState() != murahDrive.DRIVE_STOP) {
+
+		interruptCount.enable();
+	}
+	
 	taskDrive.setCallback(&callbackPrimaryJoystickDrive);
 }
 
 
 
 void setup() {
+	pinMode(RearLeftEncoderPin, INPUT_PULLUP);
+	pinMode(RearRightEncoderPin, INPUT_PULLUP);
+	pinMode(FrontLeftEncoderPin, INPUT_PULLUP);
+	pinMode(FrontRightEncoderPin, INPUT_PULLUP);
 
 	pinMode(buttonPinRobotStartStop, INPUT_PULLUP); //initialize the button
 
@@ -308,4 +335,95 @@ void loop() {
 
 	MurahBotSchedule.execute();
 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//interrupt systems
+int RearLeftWheelCurrentTurnCount;
+int RearRightWheelCurrentTurnCount;
+int FrontLeftWheelCurrentTurnCount;
+int FrontRightWheelCurrentTurnCount;
+
+//inside the interrupt
+void RearLeftWheelTurnsCount() {
+	RearLeftWheelTurns++;
+}
+
+void RearRightWheelTurnsCount() {
+	RearRightWheelTurns++;
+}
+
+void FrontLeftWheelTurnsCount() {
+	FrontLeftWheelTurns++;
+}
+
+void FrontRightWheelTurnsCount() {
+	FrontRightWheelTurns++;
+}
+
+bool onEnableInterrupt() {
+	Serial.println("Enabled Task");
+	interruptCount.setCallback(&callbackattachInterrupt);
+	return true;
+}
+
+void callbackattachInterrupt() {
+	counting = true;
+	startTime = millis();
+	enableInterrupt(RearLeftEncoderPin, &RearLeftWheelTurnsCount, RISING);
+	enableInterrupt(RearRightEncoderPin, &RearRightWheelTurnsCount, RISING);
+	enableInterrupt(FrontLeftEncoderPin, &FrontLeftWheelTurnsCount, RISING);
+	enableInterrupt(FrontRightEncoderPin, &FrontRightWheelTurnsCount, RISING);
+
+
+	interruptCount.setCallback(&callbackdetachInterrupt);
+	interruptCount.forceNextIteration();
+}
+
+void runInterrupt(unsigned long aTimeout) {
+	if (counting) return;
+
+	interruptCount.setInterval(aTimeout);
+	interruptCount.restartDelayed();
+
+
+}
+
+void callbackdetachInterrupt() {
+	if ((millis() - startTime) > 1000) {
+
+		disableInterrupt(RearLeftEncoderPin);
+		disableInterrupt(RearRightEncoderPin);
+		disableInterrupt(FrontLeftEncoderPin);
+		disableInterrupt(FrontRightEncoderPin);
+
+		interruptCount.disable();
+	}
+
+	interruptCount.setCallback(&callbackdetachInterrupt);
+}
+
+
+
+void  onDisableInterrupt() {
+	Serial.println("Disabled Task");
+	counting = false;
+	RearLeftWheelCurrentTurnCount = RearLeftWheelTurns;
+	RearLeftWheelTurns = 0;
+
+	RearRightWheelCurrentTurnCount = RearRightWheelTurns;
+	RearRightWheelTurns = 0;
+
+	FrontLeftWheelCurrentTurnCount = FrontLeftWheelTurns;
+	FrontLeftWheelTurns = 0;
+
+	FrontRightWheelCurrentTurnCount = FrontRightWheelTurns;
+	FrontRightWheelTurns = 0;
+
+	Blynk.virtualWrite(V2, RearLeftWheelCurrentTurnCount);
+	Blynk.virtualWrite(V3, RearRightWheelCurrentTurnCount);
+	Blynk.virtualWrite(V4, FrontLeftWheelCurrentTurnCount);
+	Blynk.virtualWrite(V5, FrontRightWheelCurrentTurnCount);
+
+	return;
 }
