@@ -52,8 +52,8 @@ private:
 
 class Drive4Wheel {
 public:
-	Drive4Wheel(Wheel* LeftFrontWheel, Wheel* RightFrontWheel,
-		Wheel* LeftRearWheel, Wheel* RightRearWheel, int speedToleranceRange); //default constructor with 4 Wheel instatiation and speed tolerance 
+	Drive4Wheel(Wheel& LeftFrontWheel, Wheel& RightFrontWheel,
+		Wheel& LeftRearWheel, Wheel& RightRearWheel, int speedToleranceRange); //default constructor with 4 Wheel instatiation and speed tolerance 
 	//speed tolerance range ensure that the wheel speeds are clipped below that range from the absolute max and min  
 	
 	//initialize the drive speed for the drive4wheel object 
